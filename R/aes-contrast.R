@@ -1,0 +1,130 @@
+#' A mapped aesthetic for text colour on fill
+#'
+#' @description Modifies a mapped colour (or fill) aesthetic for contrast against the fill (or colour) aesthetic.
+#'
+#' Function can be spliced into [ggplot2::aes] with [rlang::!!!].
+#'
+#' @param ... Require named arguments (and support trailing commas).
+#' @param dark A dark colour. If NULL, derived from theme text or panel background.
+#' @param light A light colour. If NULL, derived from theme text or panel background.
+#' @param aesthetic The aesthetic to be modified for contrast. Either "colour" (default) or "fill".
+#'
+#' @return A ggplot2 aesthetic in [ggplot2::aes].
+#'
+#' @seealso
+#' \code{\link[rlang]{splice}}
+#'
+#' @export
+#'
+#' @examples
+#' library(ggplot2)
+#' library(dplyr)
+#' library(stringr)
+#'
+#' set_theme(
+#'  ggrefine::theme_light(
+#'     panel_heights = rep(unit(50, "mm"), 100),
+#'     panel_widths = rep(unit(75, "mm"), 100),
+#'  )
+#' )
+#'
+#' ggwidth::set_equiwidth(equiwidth = 1.75)
+#'
+#' mtcars |>
+#'   count(cyl, am) |>
+#'   mutate(
+#'     am = if_else(am == 0, "Automatic", "Manual"),
+#'     cyl = as.factor(cyl)
+#'   ) |>
+#'   ggplot(aes(x = am, y = n, colour = cyl, fill = cyl, label = n)) +
+#'   geom_col(
+#'     position = position_dodge2(preserve = "single", padding = 0.05),
+#'     width = ggwidth::get_width(n = 2, n_dodge = 3),
+#'   ) +
+#'   scale_fill_discrete(palette = jumble::jumble) +
+#'   scale_colour_discrete(palette = blends::multiply(jumble::jumble)) +
+#'   geom_text(
+#'     mapping = ggscribe::aes_contrast(), # or aes(!!!ggscribe::aes_contrast()),
+#'     position = position_dodge2(
+#'       width = ggwidth::get_width(n = 2, n_dodge = 3),
+#'       padding = 0.05,
+#'       preserve = "single"),
+#'     vjust = 1.33,
+#'     show.legend = FALSE,
+#'   ) +
+#'   scale_y_continuous(expand = expansion(c(0, 0.05))) +
+#'   ggrefine::modern(x_type = "discrete")
+#'
+#' mtcars |>
+#'   count(cyl, am) |>
+#'   mutate(
+#'     am = if_else(am == 0, "automatic", "manual"),
+#'     am = stringr::str_to_sentence(am),
+#'     cyl = as.factor(cyl)
+#'   ) |>
+#'   ggplot(aes(y = am, x = n, colour = cyl, fill = cyl, label = n)) +
+#'   geom_col(
+#'     position = position_dodge2(preserve = "single", padding = 0.05),
+#'     width = ggwidth::get_width(n = 2, n_dodge = 3, orientation = "y"),
+#'   ) +
+#'   scale_fill_discrete(palette = jumble::jumble) +
+#'   scale_colour_discrete(palette = blends::multiply(jumble::jumble)) +
+#'   geom_text(
+#'     mapping = ggscribe::aes_contrast(), # or aes(!!!ggscribe::aes_contrast()),
+#'     position = position_dodge2(
+#'       width = ggwidth::get_width(n = 2, n_dodge = 3, orientation = "y"),
+#'       preserve = "single",
+#'       padding = 0.05,
+#'     ),
+#'     hjust = 1.25,
+#'     show.legend = FALSE,
+#'   ) +
+#'   scale_x_continuous(expand = expansion(c(0, 0.05))) +
+#'   ggrefine::modern(y_type = "discrete")
+#'
+aes_contrast <- function(..., dark = NULL, light = NULL, aesthetic = "colour") {
+  # Only get theme if we need it
+  if (rlang::is_null(dark) || rlang::is_null(light)) {
+    # Get current theme
+    current_theme <- ggplot2::get_theme()
+
+    # Get text colour from theme
+    theme_text <- current_theme$axis.text.x@colour %||%
+      current_theme$axis.text.y@colour %||%
+      current_theme$axis.text@colour %||%
+      current_theme$text@colour %||%
+      "black"
+
+    # Get panel background from theme
+    theme_panel <- current_theme$panel.background@fill %||%
+      "white"
+
+    # Determine which is dark and which is light using is_col_dark
+    if (is_col_dark(theme_text)) {
+      # Dark text theme (light mode)
+      dark <- dark %||% theme_text
+      light <- light %||% theme_panel
+    } else {
+      # Light text theme (dark mode)
+      dark <- dark %||% theme_panel
+      light <- light %||% theme_text
+    }
+  }
+
+  if (aesthetic == "colour") {
+    ggplot2::aes(
+      colour = ggplot2::after_scale(
+        get_contrast(col = .data$fill, dark = dark, light = light)
+      )
+    )
+  } else if (aesthetic == "fill") {
+    ggplot2::aes(
+      fill = ggplot2::after_scale(
+        get_contrast(col = .data$colour, dark = dark, light = light)
+      )
+    )
+  } else {
+    rlang::abort("aesthetic must be either 'colour' or 'fill'")
+  }
+}
+

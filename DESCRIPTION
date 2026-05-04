@@ -1,6 +1,6 @@
 Package: ggscribe
 Title: Publication-Quality 'ggplot2' Annotation
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: 
     person(given = "David", family = "Hodge", 
            email = "davidhodge931@gmail.com", 
@@ -22,9 +22,9 @@ Suggests: blends, dplyr, flexoki, ggrefine, ggwidth, jumble, knitr,
         rmarkdown, spelling, stringr
 Config/testthat/edition: 3
 NeedsCompilation: no
-Packaged: 2026-04-29 10:09:30 UTC; david
+Packaged: 2026-05-04 03:01:52 UTC; david
 Author: David Hodge [aut, cre, cph] (ORCID:
     <https://orcid.org/0000-0002-3868-7501>)
 Maintainer: David Hodge <davidhodge931@gmail.com>
 Repository: CRAN
-Date/Publication: 2026-05-02 09:20:02 UTC
+Date/Publication: 2026-05-04 12:50:15 UTC

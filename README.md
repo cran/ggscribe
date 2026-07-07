@@ -14,19 +14,9 @@ publication-quality ‘ggplot2’ visualisation.
 
 Note:
 
-- To avoid namespace collisions, it is recommended to not load the
-  package, but instead refer to each function with the package name
-  (e.g. `ggscribe::sec_axis_text()`.
-- `sec_axis_text` adjusts space in the plot, whereas `axis_*` functions
-  do not.
-- `axis_ticks`, `axis_text` and `axis_bracket` require (1) a globally
-  set theme with explicit panel dimensions and (2)
-  `coord_cartesian(clip = "off")`
-- `panel_shade` must be before geoms.
-- Where you require annotation text along a axis with different angles
-  etc, use a combination of `sec_axis_text` and `axis_*` functions. The
-  `sec_axis_text` function should include the annotation that requires
-  the maximum space that you want the plot to adjust to.
+- Use the secondary axis, subtitle, or axis titles to adjust space.
+- `axis_*` functions placed outside the panel require `clip = "off"` in
+  the coord space.
 
 ## Installation
 
@@ -47,18 +37,19 @@ library(ggplot2)
 library(dplyr)
 
 set_theme(
-  ggrefine::theme_grey(
-    panel_heights = rep(unit(50, "mm"), 100),
-    panel_widths = rep(unit(75, "mm"), 100),
-  )
+  ggrefine::theme_light(
+      panel_heights = rep(unit(50, "mm"), 100),
+      panel_widths = rep(unit(75, "mm"), 100),
+  ) 
 )
 
 mtcars |>
   ggplot(aes(x = wt, y = mpg, colour = as.factor(gear), fill = as.factor(gear))) +
-  scale_colour_discrete(palette = blends::multiply(get_theme()$palette.colour.discrete)) +
+  scale_fill_discrete(palette = jumble::jumble) +
+  scale_colour_discrete(palette = blends::multiply(jumble::jumble)) +
   #clip = "off" is required for axis_text, axis_ticks and axis_bracket
   coord_cartesian(clip = "off") +
-  #reference lines and shade
+  #reference lines and background
   ggscribe::reference_line(xintercept = 2.4) +
   ggscribe::reference_line(yintercept = 12)  +
   ggscribe::panel_shade(
@@ -76,20 +67,33 @@ mtcars |>
     )
   ) +
   ggscribe::axis_bracket(
-    position = "top",
+    yintercept = I(1),
     breaks = c(4, 5),
   ) +
   ggscribe::axis_text(
-    position = "top",
+    yintercept = I(1),
     breaks = c(2.4),
     labels = c("Threshold"),
   ) +
   #right axis
   ggscribe::axis_text(
-    position = "right",
+    xintercept = I(1),
     breaks = 12,
     labels = "Threshold",
   ) +
+  #bottom axis
+  ggscribe::axis_ticks(
+    yintercept = I(0),
+    breaks = 3.8,
+    length = rel(-4.5),
+  ) +
+  ggscribe::axis_text(
+    yintercept = I(0),
+    breaks = 3.8,
+    labels = "Threshold",
+    length = rel(-4.5),
+  ) +
+  labs(x = "\nWeight") +
   #geom
   geom_point() +
   #annotations fit plot
@@ -127,7 +131,9 @@ mtcars |>
     show.legend = FALSE,
   ) +
   scale_y_continuous(expand = expansion(c(0, 0.05))) +
-  ggrefine::modern(x_type = "discrete")
+  theme(panel.grid.major.x = element_blank()) +
+  theme(axis.line.y = element_blank()) +
+  theme(axis.ticks.y = element_blank())
 ```
 
 <img src="man/figures/README-unnamed-chunk-3-1.png" alt="" width="100%" />

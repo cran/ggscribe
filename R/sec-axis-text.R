@@ -1,97 +1,91 @@
 # sec_axis_text --------------------------------------------------------------------
 
-#' Secondary axis optimised for text annotations
+#' Secondary axis for text annotations
 #'
-#' @param breaks One of:
-#'    - `NULL` for no breaks
-#'    - [ggplot2::waiver()] (default) to inherit breaks from the primary axis
-#'    - A numeric vector of break positions
-#'    - A function that takes the scale limits as input and returns break
-#'      positions (e.g. `\(x) mean(c(x[2], 32))`)
-#' @param name The name of the secondary axis. Use [ggplot2::waiver()] to
-#'    derive the name from the primary axis, or `NULL` (default) for no name.
-#' @param guide A guide object used to render the axis. Defaults to
-#'    [guide_sec_axis_text()], which uses [theme_sec_axis_text()] to
-#'    make transparent ticks and lines by default.
+#' @param breaks A function or numeric vector giving the break position(s) used
+#'   to anchor the text. Defaults to `\(x) mean(x)`, which places a single label
+#'   at the midpoint of the scale limits for continuous scales.
 #' @param labels One of:
-#'    - [ggplot2::derive()] (default) to derive labels from `breaks`
-#'    - A character vector of labels, the same length as `breaks`
-#'    - A function that takes break positions as input and returns labels
+#'   - A character vector of labels, the same length as `breaks`
+#'   - A function that takes break positions as input and returns labels
+#'   If left as [ggplot2::waiver()], labels are derived from the break positions
+#'   and may be numeric.
+#' @param name The name of the secondary axis. Use [ggplot2::waiver()] to
+#'   derive the name from the primary axis, or `NULL` (default) for no name.
+#' @param guide A guide object used to render the axis. Defaults to
+#'   `guide_sec_axis_text()`, which makes transparent ticks and lines.
 #' @param ... Additional arguments passed to [ggplot2::dup_axis()].
 #'
 #' @returns A `AxisSecondary` object for use in the `sec.axis` argument of
-#'    `scale_x_continuous()` or `scale_y_continuous()`.
-#'
-#' @seealso [guide_sec_axis_text()], [theme_sec_axis_text()], [axis_text()]
+#'   `scale_x_continuous()` or `scale_y_continuous()`.
 #'
 #' @export
-#'
-#' @examples
-#' library(ggplot2)
-#' library(dplyr)
-#'
-#' set_theme(
-#'   ggrefine::theme_grey(
-#'     panel_heights = rep(unit(50, "mm"), 100),
-#'     panel_widths = rep(unit(75, "mm"), 100),
-#'   )
-#' )
-#'
-#' mtcars |>
-#'   ggplot(aes(x = wt, y = mpg, colour = as.factor(gear), fill = as.factor(gear))) +
-#'   scale_colour_discrete(palette = blends::multiply(get_theme()$palette.colour.discrete)) +
-#'   #clip = "off" is required for axis_text, axis_ticks and axis_bracket
-#'   coord_cartesian(clip = "off") +
-#'   #reference lines and shade
-#'   ggscribe::reference_line(xintercept = 2.4) +
-#'   ggscribe::reference_line(yintercept = 12)  +
-#'   ggscribe::panel_shade(
-#'     xmin = 4,
-#'     xmax = 5,
-#'   ) +
-#'   #top axis
-#'   scale_x_continuous(
-#'     sec.axis = ggscribe::sec_axis_text(
-#'       breaks = c(mean(c(4, 5))),
-#'       labels = c("Range"),
-#'       guide = ggscribe::guide_sec_axis_text(
-#'         angle = 90,
-#'       )
-#'     )
-#'   ) +
-#'   ggscribe::axis_bracket(
-#'     position = "top",
-#'     breaks = c(4, 5),
-#'   ) +
-#'   ggscribe::axis_text(
-#'     position = "top",
-#'     breaks = c(2.4),
-#'     labels = c("Threshold"),
-#'   ) +
-#'   #right axis
-#'   ggscribe::axis_text(
-#'     position = "right",
-#'     breaks = 12,
-#'     labels = "Threshold",
-#'   ) +
-#'   #'geom
-#'   geom_point() +
-#'   #annotations fit plot
-#'   theme(plot.background = element_rect(colour = "grey92"))
-#'
 sec_axis_text <- function(
-    breaks = ggplot2::waiver(),
-    labels = ggplot2::derive(),
-    name = NULL,
-    guide = ggplot2::guide_axis(theme = theme_sec_axis_text()),
-    ...
+  breaks = \(x) mean(x),
+  labels = ggplot2::waiver(),
+  name = NULL,
+  guide = guide_sec_axis_text(),
+  ...
 ) {
-
-  ggplot2::sec_axis(
-    transform = "identity",
+  ggplot2::dup_axis(
     breaks = breaks,
     labels = labels,
     name = name,
-    guide = guide
+    guide = guide,
+    ...
+  )
+}
+
+# guide_sec_axis_text ---------------------------------------------------------------
+
+#' Guide optimised for secondary axis text annotations
+#'
+#' A wrapper around [ggplot2::guide_axis()] that defaults to making transparent
+#' ticks and lines while preserving text, making it ideal for annotation labels.
+#'
+#' @param theme A theme object to style the secondary axis.
+#' @param ... Additional arguments passed to [ggplot2::guide_axis()], such as
+#'   `title`, `check.overlap`, or `angle`.
+#'
+#' @returns A `guide` object to be used in a scale's `guide` argument or within
+#'   `sec_axis_text()`.
+#'
+#' @export
+#'
+#' @inherit sec_axis_text examples
+#'
+guide_sec_axis_text <- function(..., theme = NULL) {
+  base_theme <- theme_sec_axis_text()
+
+  if (!is.null(theme)) {
+    theme <- base_theme + theme
+  } else {
+    theme <- base_theme
+  }
+
+  ggplot2::guide_axis(
+    theme = theme,
+    ...
+  )
+}
+
+# theme_sec_axis_text ------------------------------------------------------------------
+
+#' Theme adjustment for secondary axis text annotations
+#'
+#' @returns A ggplot2 theme object.
+#' @noRd
+#'
+theme_sec_axis_text <- function() {
+  ggplot2::theme(
+    axis.line.x.top = ggplot2::element_line(linetype = 0),
+    axis.line.x.bottom = ggplot2::element_line(linetype = 0),
+    axis.ticks.x.top = ggplot2::element_line(linetype = 0),
+    axis.ticks.x.bottom = ggplot2::element_line(linetype = 0),
+
+    axis.line.y.right = ggplot2::element_line(linetype = 0),
+    axis.line.y.left = ggplot2::element_line(linetype = 0),
+    axis.ticks.y.right = ggplot2::element_line(linetype = 0),
+    axis.ticks.y.left = ggplot2::element_line(linetype = 0)
   )
 }
